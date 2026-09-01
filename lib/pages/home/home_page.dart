@@ -4,13 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../providers/providers.dart';
 import '../../widgets/app_card.dart';
 
-// Cambiato da StatelessWidget a ConsumerWidget per usare Riverpod
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // "Ascoltiamo" la lista degli account cloud connessi
+    // "Ascoltiamo" i cambiamenti di stato degli account tramite Riverpod
     final accounts = ref.watch(cloudAccountsProvider);
 
     return Scaffold(
@@ -35,27 +34,35 @@ class HomePage extends ConsumerWidget {
               title: const Text('Impostazioni'),
               onTap: () {
                 context.pop(); // Chiude il drawer
-                context.push('/settings');
+                context.push('/settings'); // Naviga usando GoRouter
               },
             ),
           ],
         ),
       ),
-      
-      // Il body cambia in base alla presenza o meno di account connessi
-body: accounts.isEmpty
+      body: accounts.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text('Nessun provider collegato.'),
+                  const SizedBox(height: 24),
+                  // Bottone Google Drive
+                  FilledButton.icon(
+                    onPressed: () {
+                      ref.read(cloudAccountsProvider.notifier).signInWithGoogle();
+                    },
+                    icon: const Icon(Icons.add_to_drive),
+                    label: const Text('Collega Google Drive'),
+                  ),
                   const SizedBox(height: 16),
+                  // Bottone Mega
                   FilledButton.icon(
                     onPressed: () => _showMegaLoginDialog(context, ref),
                     icon: const Icon(Icons.cloud_sync),
                     label: const Text('Collega account Mega'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.red[700], // Colore tipico di Mega
+                      backgroundColor: Colors.red[700], 
                     ),
                   ),
                 ],
@@ -63,13 +70,18 @@ body: accounts.isEmpty
             )
           : ListView.builder(
               itemCount: accounts.length,
-              // ... (Manteniamo il ListView.builder precedente per mostrare la card)
               itemBuilder: (context, index) {
                 final account = accounts[index];
+                
+                // Determina l'icona e il colore in base al provider
+                final isMega = account.providerName.toLowerCase() == 'mega';
+                final iconColor = isMega ? Colors.red[700] : Colors.green;
+                final providerIcon = isMega ? Icons.cloud : Icons.cloud_done;
+
                 return AppCard(
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.cloud, color: Colors.red[700], size: 40),
+                    leading: Icon(providerIcon, color: iconColor, size: 40),
                     title: Text(
                       account.providerName,
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -77,13 +89,43 @@ body: accounts.isEmpty
                     subtitle: Text(account.email),
                     trailing: IconButton(
                       icon: const Icon(Icons.logout, color: Colors.grey),
-                      onPressed: () {}, // Futuro logout
+                      tooltip: 'Scollega account',
+                      onPressed: () {
+                        // Rimuove l'account dalla lista
+                        ref.read(cloudAccountsProvider.notifier).removeAccount(account.id);
+                      },
                     ),
                   ),
                 );
-              }
+              },
             ),
-      void _showMegaLoginDialog(BuildContext context, WidgetRef ref) {
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: 0,
+        onDestinationSelected: (int index) {
+          // Logica futura per la navigazione tra i tab
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.folder),
+            label: 'I miei file',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.cloud),
+            label: 'Provider',
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Azione generica (es. nuovo file/cartella in futuro)
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  // Finestra di dialogo per il login a Mega
+  void _showMegaLoginDialog(BuildContext context, WidgetRef ref) {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
 
@@ -100,6 +142,7 @@ body: accounts.isEmpty
                 decoration: const InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
               ),
+              const SizedBox(height: 8),
               TextField(
                 controller: passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
@@ -109,19 +152,20 @@ body: accounts.isEmpty
           ),
           actions: [
             TextButton(
-              onPressed: () => context.pop(),
+              onPressed: () => context.pop(), // Chiude la modale senza fare nulla
               child: const Text('Annulla'),
             ),
             FilledButton(
               onPressed: () async {
-                // Avvia il login tramite Riverpod
+                // Avvia il login tramite Riverpod usando i dati inseriti
                 final success = await ref.read(cloudAccountsProvider.notifier).signInWithMega(
                   emailController.text,
                   passwordController.text,
                 );
                 
+                // Se il login riesce ed il widget è ancora attivo, chiude la modale
                 if (success && context.mounted) {
-                  context.pop(); // Chiude il dialog se il login ha successo
+                  context.pop();
                 }
               },
               child: const Text('Accedi'),
@@ -129,28 +173,6 @@ body: accounts.isEmpty
           ],
         );
       },
-    );
-  }      
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (int index) {
-          // Logica per cambiare tab
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.folder),
-            label: 'I miei file',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.cloud),
-            label: 'Provider',
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }
