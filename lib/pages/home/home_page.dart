@@ -43,7 +43,7 @@ class HomePage extends ConsumerWidget {
       ),
       
       // Il body cambia in base alla presenza o meno di account connessi
-      body: accounts.isEmpty
+body: accounts.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -51,38 +51,37 @@ class HomePage extends ConsumerWidget {
                   const Text('Nessun provider collegato.'),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: () {
-                      // Richiama il metodo di login che abbiamo creato
-                      ref.read(cloudAccountsProvider.notifier).signInWithGoogle();
-                    },
-                    icon: const Icon(Icons.add_to_drive),
-                    label: const Text('Collega Google Drive'),
+                    onPressed: () => _showMegaLoginDialog(context, ref),
+                    icon: const Icon(Icons.cloud_sync),
+                    label: const Text('Collega account Mega'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red[700], // Colore tipico di Mega
+                    ),
                   ),
                 ],
               ),
             )
           : ListView.builder(
               itemCount: accounts.length,
+              // ... (Manteniamo il ListView.builder precedente per mostrare la card)
               itemBuilder: (context, index) {
                 final account = accounts[index];
-                return AppCard( // Utilizziamo il widget riutilizzabile creato in precedenza
+                return AppCard(
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.cloud_done, color: Colors.green, size: 40),
+                    leading: Icon(Icons.cloud, color: Colors.red[700], size: 40),
                     title: Text(
                       account.providerName,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(account.email),
                     trailing: IconButton(
-                      icon: const Icon(Icons.logout, color: Colors.red),
-                      onPressed: () {
-                        // Implementeremo la disconnessione in seguito
-                      },
+                      icon: const Icon(Icons.logout, color: Colors.grey),
+                      onPressed: () {}, // Futuro logout
                     ),
                   ),
                 );
-              },
+              }
             ),
             
       bottomNavigationBar: NavigationBar(
