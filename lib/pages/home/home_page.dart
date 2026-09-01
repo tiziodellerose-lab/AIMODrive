@@ -83,7 +83,54 @@ body: accounts.isEmpty
                 );
               }
             ),
-            
+      void _showMegaLoginDialog(BuildContext context, WidgetRef ref) {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Login Mega'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: 'Password'),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => context.pop(),
+              child: const Text('Annulla'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                // Avvia il login tramite Riverpod
+                final success = await ref.read(cloudAccountsProvider.notifier).signInWithMega(
+                  emailController.text,
+                  passwordController.text,
+                );
+                
+                if (success && context.mounted) {
+                  context.pop(); // Chiude il dialog se il login ha successo
+                }
+              },
+              child: const Text('Accedi'),
+            ),
+          ],
+        );
+      },
+    );
+  }      
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         onDestinationSelected: (int index) {
